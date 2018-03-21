@@ -446,7 +446,7 @@ def motion_correct_oneP_rigid(
     Motion correction object
     '''
     min_mov = np.array([cm.motion_correction.low_pass_filter_space(
-        m_, gSig_filt) for m_ in cm.load(filename[0], subindices=range(400))]).min()
+        m_, gSig_filt) for m_ in cm.load(filename, subindices=range(400))]).min()
     new_templ = None
 
     # TODO: needinfo how the classes works
@@ -508,7 +508,7 @@ def motion_correct_oneP_nonrigid(
     '''
     if new_templ is None:
         min_mov = np.array([cm.motion_correction.low_pass_filter_space(
-            m_, gSig_filt) for m_ in cm.load(filename, subindices=range(400))]).min()
+            m_, gSig_filt) for m_ in cm.load([filename], subindices=range(400))]).min()
     else:
         min_mov = np.min(new_templ)
 
