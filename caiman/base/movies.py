@@ -448,6 +448,7 @@ class movie(ts.timeseries):
         return self
 
     def crop(self, crop_top=0, crop_bottom=0, crop_left=0, crop_right=0, crop_begin=0, crop_end=0):
+
         """ Crop movie
         """
         t, h, w = self.shape
