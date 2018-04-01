@@ -303,7 +303,7 @@ def initialize_components(Y, K=30, gSig=[5, 5], gSiz=None, ssub=1, tsub=1, nIter
         if img is None:
             img = np.mean(Y, axis=-1)
             img += np.median(img)
-            img += np.finfo(np.float32).eps
+            img += np.finfo(np.float64).eps
 
         Y = old_div(Y, np.reshape(img, d + (-1,), order='F'))
         alpha_snmf /= np.mean(img)
@@ -642,15 +642,15 @@ def greedyROI(Y, nr=30, gSig=[5, 5], gSiz=[11, 11], nIter=5, kernel=None, nb=1,
     gHalf = np.array(gSiz) // 2
     gSiz = 2 * gHalf + 1
     # we initialize every values to zero
-    A = np.zeros((np.prod(d[0:-1]), nr), dtype=np.float32)
-    C = np.zeros((nr, d[-1]), dtype=np.float32)
+    A = np.zeros((np.prod(d[0:-1]), nr), dtype=np.float64)
+    C = np.zeros((nr, d[-1]), dtype=np.float64)
     center = np.zeros((nr, Y.ndim - 1))
 
     rho = imblur(Y, sig=gSig, siz=gSiz, nDimBlur=Y.ndim - 1, kernel=kernel)
     if rolling_sum:
         print('USING ROLLING SUM FOR INITIALIZATION....')
         rolling_filter = np.ones(
-            (rolling_length), dtype=np.float32) / rolling_length
+            (rolling_length), dtype=np.float64) / rolling_length
         rho_s = scipy.signal.lfilter(rolling_filter, 1., rho**2)
         v = np.amax(rho_s, axis=-1)
     else:
@@ -670,8 +670,8 @@ def greedyROI(Y, nr=30, gSig=[5, 5], gSiz=[11, 11], nIter=5, kernel=None, nb=1,
                  for c in range(len(ij))]
         # we create an array of it (fl like) and compute the trace like the pixel ij trough time
         dataTemp = np.array(
-            Y[[slice(*a) for a in ijSig]].copy(), dtype=np.float32)
-        traceTemp = np.array(np.squeeze(rho[ij]), dtype=np.float32)
+            Y[[slice(*a) for a in ijSig]].copy(), dtype=np.float64)
+        traceTemp = np.array(np.squeeze(rho[ij]), dtype=np.float64)
 
         coef, score = finetune(dataTemp, traceTemp, nIter=nIter)
         C[k, :] = np.squeeze(score)
@@ -709,8 +709,8 @@ def greedyROI(Y, nr=30, gSig=[5, 5], gSiz=[11, 11], nIter=5, kernel=None, nb=1,
                      order='F') + med.flatten(order='F')[:, None]
 #    model = NMF(n_components=nb, init='random', random_state=0)
     model = NMF(n_components=nb, init='nndsvdar')
-    b_in = model.fit_transform(np.maximum(res, 0)).astype(np.float32)
-    f_in = model.components_.squeeze().astype(np.float32)
+    b_in = model.fit_transform(np.maximum(res, 0)).astype(np.float64)
+    f_in = model.components_.squeeze().astype(np.float64)
 
     return A, C, center, b_in, f_in
 
@@ -758,7 +758,7 @@ def finetune(Y, cin, nIter=5):
     for _ in range(nIter):
         a = np.maximum(np.dot(Y, cin), 0)
         a = old_div(a, np.sqrt(np.sum(a**2)) +
-                    np.finfo(np.float32).eps)  # compute the l2/a
+                    np.finfo(np.float64).eps)  # compute the l2/a
         # c as the variation of thoses patches
         cin = np.sum(Y * a[..., np.newaxis], tuple(np.arange(Y.ndim - 1)))
 
@@ -1018,18 +1018,18 @@ def greedyROI_corr(Y, Y_ds, max_number=None, gSiz=None, gSig=None, center_psf=Tr
         print('Update Temporal')
         C, A = caiman.source_extraction.cnmf.temporal.update_temporal_components(
             B, spr.csc_matrix(A),
-            np.zeros((d1 * d2, 0), np.float32), C, np.zeros((0,
-                                                             total_frames), np.float32),
+            np.zeros((d1 * d2, 0), np.float64), C, np.zeros((0,
+                                                             total_frames), np.float64),
             dview=None, bl=None, c1=None, sn=None, g=None, **options['temporal_params'])[:2]
         print('Update Spatial')
         options['spatial_params']['dims'] = (d1, d2)
         A, _, C, _ = caiman.source_extraction.cnmf.spatial.update_spatial_components(
-            B, C=C, f=np.zeros((0, total_frames), np.float32), A_in=A,
+            B, C=C, f=np.zeros((0, total_frames), np.float64), A_in=A,
             sn=np.sqrt(downscale((sn**2).reshape(dims, order='F'),
                                  tuple([ssub] * len(dims))).ravel() / tsub) / ssub,
-            b_in=np.zeros((d1 * d2, 0), np.float32),
+            b_in=np.zeros((d1 * d2, 0), np.float64),
             dview=None, **options['spatial_params'])
-        A = A.astype(np.float32)
+        A = A.astype(np.float64)
 
         print('Compute Background Again')
         # background according to ringmodel
@@ -1061,18 +1061,18 @@ def greedyROI_corr(Y, Y_ds, max_number=None, gSiz=None, gSig=None, center_psf=Tr
         C, A, b__, f__, S__, bl__, c1__, neurons_sn__, g1__, YrA__, lam__ = \
             caiman.source_extraction.cnmf.temporal.update_temporal_components(
                 B, spr.csc_matrix(A),
-                np.zeros((np.prod(dims), 0), np.float32), C, np.zeros(
-                    (0, T), np.float32),
+                np.zeros((np.prod(dims), 0), np.float64), C, np.zeros(
+                    (0, T), np.float64),
                 dview=None, bl=None, c1=None, sn=None, g=None, **options['temporal_params'])
         print('Update Spatial')
         options['spatial_params']['dims'] = dims
         options['spatial_params']['se'] = np.ones(
             (1,) * len((d1, d2)), dtype=np.uint8)
         A, _, C, _ = caiman.source_extraction.cnmf.spatial.update_spatial_components(
-            B, C=C, f=np.zeros((0, T), np.float32), A_in=A, sn=sn,
-            b_in=np.zeros((np.prod(dims), 0), np.float32),
+            B, C=C, f=np.zeros((0, T), np.float64), A_in=A, sn=sn,
+            b_in=np.zeros((np.prod(dims), 0), np.float64),
             dview=None, **options['spatial_params'])
-        A = A.astype(np.float32)
+        A = A.astype(np.float64)
         nA = np.ravel(np.sqrt(A.power(2).sum(0)))
         A = np.array(A / nA)
         C *= nA[:, None]
@@ -1102,7 +1102,7 @@ def greedyROI_corr(Y, Y_ds, max_number=None, gSiz=None, gSig=None, center_psf=Tr
         b_in, s_in, f_in = spr.linalg.svds(B, k=nb)
         f_in *= s_in[:, np.newaxis]
 
-    return A, C, center.T, b_in.astype(np.float32), f_in.astype(np.float32)
+    return A, C, center.T, b_in.astype(np.float64), f_in.astype(np.float64)
 
 
 @profile
@@ -1251,13 +1251,13 @@ def init_neurons_corr_pnr(data, max_number=None, gSiz=15, gSig=None,
         # maximum number of neurons
         max_number = np.int32((ind_search.size - ind_search.sum()) / 5)
     Ain = np.zeros(shape=(max_number, d1, d2),
-                   dtype=np.float32)  # neuron shapes
+                   dtype=np.float64)  # neuron shapes
     Cin = np.zeros(shape=(max_number, total_frames),
-                   dtype=np.float32)  # de-noised traces
+                   dtype=np.float64)  # de-noised traces
     Sin = np.zeros(shape=(max_number, total_frames),
-                   dtype=np.float32)  # spiking # activity
+                   dtype=np.float64)  # spiking # activity
     Cin_raw = np.zeros(shape=(max_number, total_frames),
-                       dtype=np.float32)  # raw traces
+                       dtype=np.float64)  # raw traces
     center = np.zeros(shape=(2, max_number))  # neuron centers
 
     num_neurons = 0  # number of initialized neurons
@@ -1598,9 +1598,9 @@ def compute_W(Y, A, C, dims, radius, data_fits_in_memory=True):
         B = Y[index] - A[index].dot(C) - \
             b0[index, None] if X is None else X[index]
         data += list(np.linalg.inv(np.array(B.dot(B.T)) +
-                                   1e-9 * np.eye(len(index), dtype='float32')).
+                                   1e-9 * np.eye(len(index), dtype='float64')).
                      dot(B.dot(Y[p] - A[p].dot(C).ravel() - b0[p] if X is None else X[p])))
         # np.linalg.lstsq seems less robust but scipy version would be (robust but for the problem size slower) alternative
         # data += list(scipy.linalg.lstsq(B.T, Y[p] - A[p].dot(C) - b0[p], check_finite=False)[0])
         indptr.append(len(indices))
-    return spr.csr_matrix((data, indices, indptr), dtype='float32'), b0.astype(np.float32)
+    return spr.csr_matrix((data, indices, indptr), dtype='float64'), b0.astype(np.float64)
