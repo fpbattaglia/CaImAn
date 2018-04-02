@@ -257,10 +257,10 @@ def correlation_pnr(Y, gSig=None, center_psf=True, swap_dim=True):
 
     # parameters
     _, d1, d2 = Y.shape
-    data_raw = Y.reshape(-1, d1, d2).astype('float32')
+    # data_raw = Y.reshape(-1, d1, d2).astype('float32')
 
     # filter data
-    data_filtered = data_raw.copy()
+    data_filtered = Y.copy()
     if gSig:
         if not isinstance(gSig, list):
             gSig = [gSig, gSig]
@@ -287,7 +287,7 @@ def correlation_pnr(Y, gSig=None, center_psf=True, swap_dim=True):
     pnr[pnr < 0] = 0
 
     # remove small values
-    tmp_data = data_filtered.copy() / data_std
+    tmp_data = data_filtered / data_std
     tmp_data[tmp_data < 3] = 0
 
     # compute correlation image
