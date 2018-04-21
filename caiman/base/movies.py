@@ -1119,6 +1119,134 @@ class movie(ts.timeseries):
                 cv2.waitKey(100)
 
 
+    def interactive_crop(self, gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
+             backend='opencv', do_loop=False, bord_px=None):
+        """
+        Play the movie using opencv
+
+        Parameters:
+        ----------
+        gain: adjust  movie brightness
+
+        frate : playing speed if different from original (inter frame interval in seconds)
+
+        backend: 'pylab' or 'opencv', the latter much faster
+
+        Raise:
+        -----
+         Exception('Unknown backend!')
+        """
+        # todo: todocument
+        if not (backend == 'opencv'):
+            print('Sorry, only available in opencv :( ')
+            return self
+
+        print("Select region, press [c] to crop")
+
+        gain *= 1.
+        maxmov = np.nanmax(self)
+
+        self.click = False
+        self.UL = []
+        self.LR = []
+
+
+        def click_and_crop(event, x, y, flags, param):
+
+            if self.click and event == 0:
+                self.LR = (x , y )
+
+            if event == 1:
+                self.UL = (x, y)
+                self.LR = (x, y)
+                self.click=True
+
+            elif event == 4:
+                self.LR = (x, y)
+                self.click=False
+
+
+        cv2.namedWindow("frame")
+        cv2.setMouseCallback("frame", click_and_crop)
+
+
+        if fr is None:
+            fr = self.fr
+
+        looping = True
+        terminated = False
+        crop = False
+        terminated_inner = False
+
+        while looping:
+
+            for iddxx, frame in enumerate(self):
+                if bord_px is not None and np.sum(bord_px) > 0:
+                    frame = frame[bord_px:-bord_px, bord_px:-bord_px]
+
+                #if magnification != 1:
+                frame = cv2.resize(
+                    frame, None, fx=magnification, fy=magnification, interpolation=interpolation)
+
+
+                if self.UL and self.LR:
+                    cv2.rectangle(frame,self.UL,self.LR,1)
+
+                cv2.imshow('frame', (offset + frame) * gain / maxmov)
+
+
+                if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('q'):
+                    looping = False
+                    terminated = True
+                    break
+
+                # for i in range(1, 10):
+                #     if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord(str(i)):
+                #         print(i)
+                #         skip = i
+
+                if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('c'):
+
+                    print("cropping at"+str(self.UL)+','+str(self.LR)+'? [y/n]')
+                    while 1:
+                        if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('n'):
+                            break
+                        elif cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('y'):
+                            #print('cropping...')
+                            crop = True
+                            looping = False
+                            terminated = True
+                            terminated_inner = True
+                            break
+
+                if terminated_inner:
+                    break
+            if terminated:
+                break
+
+            if do_loop:
+                looping = True
+
+        cv2.waitKey(100)
+        cv2.destroyAllWindows()
+        for i in range(10):
+            cv2.waitKey(100)
+
+        if crop:
+            print('cropping...')
+            left = min(self.UL[0],self.LR[0],self.shape[2])//magnification
+            right = max(self.UL[0],self.LR[0],0)//magnification
+            up = min(self.UL[1],self.LR[1],self.shape[1])//magnification
+
+            down = max(self.UL[1],self.LR[1],0)//magnification
+
+            print(left,right,up,down)
+
+            return self[:,up:down,left:right]
+        return self
+
+
+
 
 def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None, var_name_hdf5 = 'mov', in_memory = False, is_behavior = False, bottom=0, top=0, left=0, right=0, channel = None):
     """
