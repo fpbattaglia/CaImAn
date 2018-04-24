@@ -1207,17 +1207,17 @@ class movie(ts.timeseries):
 
                 if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('c'):
 
-                    print("cropping at"+str(self.UL)+','+str(self.LR)+'? [y/n]')
-                    while 1:
-                        if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('n'):
-                            break
-                        elif cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('y'):
+                    #print("cropping at"+str(self.UL)+','+str(self.LR)+'? [y/n]')
+                    # while 1:
+                    #     if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('n'):
+                    #         break
+                    #     elif cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('y'):
                             #print('cropping...')
-                            crop = True
-                            looping = False
-                            terminated = True
-                            terminated_inner = True
-                            break
+                    crop = True
+                    looping = False
+                    terminated = True
+                    terminated_inner = True
+                    break
 
                 if terminated_inner:
                     break
@@ -1233,16 +1233,19 @@ class movie(ts.timeseries):
             cv2.waitKey(100)
 
         if crop:
-            print('cropping...')
+            print("cropping at" + str(self.UL) + ',' + str(self.LR) + '...')
             left = min(self.UL[0],self.LR[0],self.shape[2])//magnification
             right = max(self.UL[0],self.LR[0],0)//magnification
-            up = min(self.UL[1],self.LR[1],self.shape[1])//magnification
+            top = min(self.UL[1],self.LR[1],self.shape[1])//magnification
 
-            down = max(self.UL[1],self.LR[1],0)//magnification
+            bottom = max(self.UL[1],self.LR[1],0)//magnification
 
-            print(left,right,up,down)
+            print(left,right,top,bottom)
 
-            return self[:,up:down,left:right]
+            self = self.crop(crop_top=top, crop_bottom=self.shape[1]-bottom + 1,
+                             crop_left=left, crop_right=self.shape[2]-right +1, crop_begin=0, crop_end=0)
+
+            #return movie(self[:,up:down,left:right].astype(np.float32))
         return self
 
 
