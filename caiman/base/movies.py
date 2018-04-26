@@ -98,6 +98,7 @@ class movie(ts.timeseries):
             return super(movie, cls).__new__(cls, input_arr, **kwargs)
         else:
             raise Exception('Input must be an ndarray, use load instead!')
+        
 
     def motion_correction_online(self, max_shift_w=25, max_shift_h=25, init_frames_template=100,
                                  show_movie=False, bilateral_blur=False, template=None, min_count=1000):
@@ -1147,22 +1148,22 @@ class movie(ts.timeseries):
         maxmov = np.nanmax(self)
 
         self.click = False
-        self.UL = []
-        self.LR = []
+        upper_left_orig = self.upper_left
+        lower_right_orig = self.lower_right
 
 
         def click_and_crop(event, x, y, flags, param):
 
             if self.click and event == 0:
-                self.LR = (x , y )
+                self.lower_right = (x , y )
 
             if event == 1:
-                self.UL = (x, y)
-                self.LR = (x, y)
+                self.upper_left = (x, y)
+                self.lower_right = (x, y)
                 self.click=True
 
             elif event == 4:
-                self.LR = (x, y)
+                self.lower_right = (x, y)
                 self.click=False
 
 
@@ -1184,13 +1185,12 @@ class movie(ts.timeseries):
                 if bord_px is not None and np.sum(bord_px) > 0:
                     frame = frame[bord_px:-bord_px, bord_px:-bord_px]
 
-                #if magnification != 1:
                 frame = cv2.resize(
                     frame, None, fx=magnification, fy=magnification, interpolation=interpolation)
 
 
-                if self.UL and self.LR:
-                    cv2.rectangle(frame,self.UL,self.LR,1)
+                if self.upper_left and self.lower_right:
+                    cv2.rectangle(frame,self.upper_left,self.lower_right,1)
 
                 cv2.imshow('frame', (offset + frame) * gain / maxmov)
 
@@ -1200,19 +1200,8 @@ class movie(ts.timeseries):
                     terminated = True
                     break
 
-                # for i in range(1, 10):
-                #     if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord(str(i)):
-                #         print(i)
-                #         skip = i
-
                 if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('c'):
 
-                    #print("cropping at"+str(self.UL)+','+str(self.LR)+'? [y/n]')
-                    # while 1:
-                    #     if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('n'):
-                    #         break
-                    #     elif cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('y'):
-                            #print('cropping...')
                     crop = True
                     looping = False
                     terminated = True
@@ -1233,22 +1222,27 @@ class movie(ts.timeseries):
             cv2.waitKey(100)
 
         if crop:
-            print("cropping at" + str(self.UL) + ',' + str(self.LR) + '...')
-            left = min(self.UL[0],self.LR[0],self.shape[2])//magnification
-            right = max(self.UL[0],self.LR[0],0)//magnification
-            top = min(self.UL[1],self.LR[1],self.shape[1])//magnification
-
-            bottom = max(self.UL[1],self.LR[1],0)//magnification
-
+            print("cropping at" + str(self.upper_left) + ',' + str(self.lower_right) + '...')
+            left = min(self.upper_left[0],self.lower_right[0],self.shape[2])//magnification
+            right = max(self.upper_left[0],self.lower_right[0],0)//magnification
+            top = min(self.upper_left[1],self.lower_right[1],self.shape[1])//magnification
+            bottom = max(self.upper_left[1],self.lower_right[1],0)//magnification
+            
+            
             print(left,right,top,bottom)
 
-            self = self.crop(crop_top=top, crop_bottom=self.shape[1]-bottom + 1,
-                             crop_left=left, crop_right=self.shape[2]-right +1, crop_begin=0, crop_end=0)
-
-            #return movie(self[:,up:down,left:right].astype(np.float32))
+            crop_bottom = self.shape[1]-bottom + 1
+            crop_right = self.shape[0]-right + 1
+                
+            self.upper_left=[top,left]
+            self.lower_right=[crop_bottom,crop_right]
+            
+            self = self.crop(crop_top=top, crop_bottom=crop_bottom,
+                             crop_left=left, crop_right=crop_right, crop_begin=0, crop_end=0)
+        
+        self.upper_left = upper_left_orig
+        self.lower_right = lower_right_orig
         return self
-
-
 
 
 def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None, var_name_hdf5 = 'mov', in_memory = False, is_behavior = False, bottom=0, top=0, left=0, right=0, channel = None):
