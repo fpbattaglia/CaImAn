@@ -2285,7 +2285,7 @@ def compute_metrics_motion_correction(fname, final_size_x, final_size_y, swap_di
         flows.append(flow)
         norms.append(n)
 
-    np.savez(fname[:-4] + '_metrics', flows=flows, norms=norms, correlations=correlations, smoothness=smoothness,
+    np.savez(fname[:-5] + '_metrics', flows=flows, norms=norms, correlations=correlations, smoothness=smoothness,
              tmpl=tmpl, smoothness_corr=smoothness_corr, img_corr=img_corr)
     return tmpl, correlations, flows, norms, smoothness
 
