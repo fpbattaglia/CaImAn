@@ -393,8 +393,8 @@ def register_ROIs(A1, A2, dims, template1=None, template2=None, align_flag=True,
                               order='C').astype(np.float32)
         shifts_y = np.reshape(_sh_[:, 0], dims_grid,
                               order='C').astype(np.float32)
-        x_grid, y_grid = np.meshgrid(np.arange(0., dims[0]).astype(
-            np.float32), np.arange(0., dims[1]).astype(np.float32))
+        x_grid, y_grid = np.meshgrid(np.arange(0., dims[1]).astype(
+            np.float32), np.arange(0., dims[0]).astype(np.float32))
         x_remap = (-np.resize(shifts_x, dims) + x_grid).astype(np.float32)
         y_remap = (-np.resize(shifts_y, dims) + y_grid).astype(np.float32)
         A2 = np.stack([cv2.remap(img.astype(np.float32), x_remap,

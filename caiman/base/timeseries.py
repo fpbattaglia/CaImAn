@@ -85,8 +85,6 @@ class timeseries(np.ndarray):
 
         obj.start_time = np.double(start_time)
         obj.fr = np.double(fr)
-        obj.upper_left=[0,0]    #
-        obj.lower_right=[0,0] 
         if type(file_name) is list:
             obj.file_name = file_name
         else:

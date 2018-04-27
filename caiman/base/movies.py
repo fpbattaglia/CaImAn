@@ -1120,7 +1120,7 @@ class movie(ts.timeseries):
                 cv2.waitKey(100)
 
 
-    def interactive_crop(self, gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
+    def interactive_crop(self, size=[], gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
              backend='opencv', do_loop=False, bord_px=None):
         """
         Play the movie using opencv
@@ -1147,24 +1147,36 @@ class movie(ts.timeseries):
         gain *= 1.
         maxmov = np.nanmax(self)
 
-        self.click = False
-        upper_left_orig = self.upper_left
-        lower_right_orig = self.lower_right
+        click = False
+        upper_left = None
+        lower_right = None
 
 
         def click_and_crop(event, x, y, flags, param):
-
-            if self.click and event == 0:
-                self.lower_right = (x , y )
+            
+            nonlocal click,upper_left,lower_right
+            
+            if click and event == 0:
+                if size:
+                    pass
+                else:
+                    lower_right = (x , y )
 
             if event == 1:
-                self.upper_left = (x, y)
-                self.lower_right = (x, y)
-                self.click=True
+                if size:
+                    upper_left = (x, y)
+                    lower_right = (x+size[1], y+size[0])
+                else:
+                    upper_left = (x, y)
+                    lower_right = (x, y)
+                    click=True
 
             elif event == 4:
-                self.lower_right = (x, y)
-                self.click=False
+                if size:
+                    pass
+                else:
+                    lower_right = (x, y)
+                    click=False
 
 
         cv2.namedWindow("frame")
@@ -1189,8 +1201,8 @@ class movie(ts.timeseries):
                     frame, None, fx=magnification, fy=magnification, interpolation=interpolation)
 
 
-                if self.upper_left and self.lower_right:
-                    cv2.rectangle(frame,self.upper_left,self.lower_right,1)
+                if upper_left and lower_right:
+                    cv2.rectangle(frame,upper_left,lower_right,1)
 
                 cv2.imshow('frame', (offset + frame) * gain / maxmov)
 
@@ -1221,31 +1233,26 @@ class movie(ts.timeseries):
         for i in range(10):
             cv2.waitKey(100)
 
-        if crop:
-            print("cropping at" + str(self.upper_left) + ',' + str(self.lower_right) + '...')
-            left = min(self.upper_left[0],self.lower_right[0],self.shape[2])//magnification
-            right = max(self.upper_left[0],self.lower_right[0],0)//magnification
-            top = min(self.upper_left[1],self.lower_right[1],self.shape[1])//magnification
-            bottom = max(self.upper_left[1],self.lower_right[1],0)//magnification
-            
-            
-            print(left,right,top,bottom)
-
-            crop_bottom = self.shape[1]-bottom + 1
-            crop_right = self.shape[0]-right + 1
+        if crop and upper_left and lower_right:
+            if size:
+                left = upper_left[0]
+                right = left+size[1]
+                top = upper_left[1]
+                bottom = top+size[0]            
                 
-            self.upper_left=[top,left]
-            self.lower_right=[crop_bottom,crop_right]
-            
-            self = self.crop(crop_top=top, crop_bottom=crop_bottom,
-                             crop_left=left, crop_right=crop_right, crop_begin=0, crop_end=0)
-        
-        self.upper_left = upper_left_orig
-        self.lower_right = lower_right_orig
+            else:
+                print("cropping at" + str(upper_left) + ',' + str(lower_right) + '...')
+                left = min(upper_left[0],lower_right[0],self.shape[2])//magnification
+                right = max(upper_left[0],lower_right[0],0)//magnification
+                top = min(upper_left[1],lower_right[1],self.shape[1])//magnification
+                bottom = max(upper_left[1],lower_right[1],0)//magnification
+
+            self =  self[:, top:bottom, left:right]
+
         return self
 
 
-def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None, var_name_hdf5 = 'mov', in_memory = False, is_behavior = False, bottom=0, top=0, left=0, right=0, channel = None):
+def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None, var_name_hdf5 = None, in_memory = False, is_behavior = False, bottom=0, top=0, left=0, right=0, channel = None):
     """
     load movie from file. SUpports a variety of formats. tif, hdf5, npy and memory mapped. Matlab is experimental.
 
@@ -1385,8 +1392,12 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                 return movie(**f)
 
         elif extension == '.hdf5':
+            
+            
 
             with h5py.File(file_name, "r") as f:
+                if not var_name_hdf5: var_name_hdf5 = [k for k in f.keys()][0]
+                
                 attrs = dict(f[var_name_hdf5].attrs)
                 if meta_data in attrs:
                     attrs['meta_data'] = cpk.loads(attrs['meta_data'])
