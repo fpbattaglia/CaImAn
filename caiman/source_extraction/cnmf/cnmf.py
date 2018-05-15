@@ -44,6 +44,7 @@ import scipy
 import psutil
 import pylab as pl
 from time import time
+import pickle 
 
 try:
     profile
@@ -87,6 +88,8 @@ class CNMF(object):
                  center_psf=False,  use_dense=True, deconv_flag=True,
                  simultaneously=False, n_refit=0, del_duplicates=False, N_samples_exceptionality=5,
                  max_num_added=1, min_num_trial=2):
+        
+                
         """
         Constructor of the CNMF method
 
@@ -244,6 +247,7 @@ class CNMF(object):
         --------
         self
         """
+        
 
         # number of neurons expected per FOV (or per patch if patches_pars is not None
         self.k = k
@@ -1138,6 +1142,52 @@ class CNMF(object):
 
         caiman.utils.visualization.view_patches_bar(Yr, self.A, self.C, self.b, self.f, dims[
                                                     0], dims[1], YrA=self.YrA, img=img)
+
+    def save(self,path):
+        with open(path,'wb') as file:
+            pickle.dump([self.n_processes, self.k, self.gSig, self.gSiz, self.merge_thresh, self.p, None,
+                 self.Ain, self.Cin, self.b_in, self.f_in, self.do_merge,
+                 self.ssub, self.tsub, self.p_ssub, self.p_tsub, self.method_init, self.alpha_snmf,
+                 self.rf, self.stride, self.memory_fact, self.gnb, self.nb_patch, self.only_init,
+                 self.method_deconvolution, self.n_pixels_per_process, self.block_size, self.num_blocks_per_run,
+                 self.check_nan, self.skip_refinement, self.normalize_init, self.options_local_NMF,
+                 self.minibatch_shape, self.minibatch_suff_stat,
+                 self.update_num_comps, self.rval_thr, self.thresh_fitness_delta,
+                 self.thresh_fitness_raw, self.thresh_overlap,
+                 self.max_comp_update_shape, self.num_times_comp_updated,
+                 self.batch_update_suff_stat, self.thresh_s_min, self.s_min,
+                 self.remove_very_bad_comps, self.border_pix, self.low_rank_background,
+                 self.update_background_components, self.rolling_sum, self.rolling_length,
+                 self.min_corr, self.min_pnr, self.deconvolve_options_init, self.ring_size_factor,
+                 self.center_psf,  self.use_dense, self.deconv_flag,
+                 self.simultaneously, self.n_refit, self.del_duplicates, self.N_samples_exceptionality,
+                 self.max_num_added, self.min_num_trial,self.options,(self.A),
+                 (self.C),(self.S),(self.b),(self.f),
+                 (self.sn),(self.g)],file)
+#                    np.array(self.C),np.array(self.S),np.array(self.b),np.array(self.f),
+#                 np.array(self.sn),np.array(self.g)],file)
+        
+                        
+        
+    def load(self,path):
+        with open(path,'rb') as file:
+            [self.n_processes, self.k, self.gSig, self.gSiz, self.merge_thresh, self.p, self.dview,
+                     self.Ain, self.Cin, self.b_in, self.f_in, self.do_merge,
+                     self.ssub, self.tsub, self.p_ssub, self.p_tsub, self.method_init, self.alpha_snmf,
+                     self.rf, self.stride, self.memory_fact, self.gnb, self.nb_patch, self.only_init,
+                     self.method_deconvolution, self.n_pixels_per_process, self.block_size, self.num_blocks_per_run,
+                     self.check_nan, self.skip_refinement, self.normalize_init, self.options_local_NMF,
+                     self.minibatch_shape, self.minibatch_suff_stat,
+                     self.update_num_comps, self.rval_thr, self.thresh_fitness_delta,
+                     self.thresh_fitness_raw, self.thresh_overlap,
+                     self.max_comp_update_shape, self.num_times_comp_updated,
+                     self.batch_update_suff_stat, self.thresh_s_min, self.s_min,
+                     self.remove_very_bad_comps, self.border_pix, self.low_rank_background,
+                     self.update_background_components, self.rolling_sum, self.rolling_length,
+                     self.min_corr, self.min_pnr, self.deconvolve_options_init, self.ring_size_factor,
+                     self.center_psf,  self.use_dense, self.deconv_flag,
+                     self.simultaneously, self.n_refit, self.del_duplicates, self.N_samples_exceptionality,
+                     self.max_num_added, self.min_num_trial,self.options,self.A,  self.C ,self.S ,self.b, self.f,self.sn ,self.g] = pickle.load(file)
 
 
 def scale(y):
