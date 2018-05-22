@@ -324,7 +324,11 @@ class CNMF(object):
         self.center_psf = center_psf
         self.nb_patch = nb_patch
         self.del_duplicates = del_duplicates
-
+        
+        self.dims=[]
+        self.cn_filter = None
+        self.pnr = None
+        
         self.options = CNMFSetParms((1, 1, 1), n_processes, p=p, gSig=gSig, gSiz=gSiz,
                                     K=k, ssub=ssub, tsub=tsub,
                                     p_ssub=p_ssub, p_tsub=p_tsub, method_init=method_init,
@@ -1163,7 +1167,7 @@ class CNMF(object):
                  self.simultaneously, self.n_refit, self.del_duplicates, self.N_samples_exceptionality,
                  self.max_num_added, self.min_num_trial,self.options,(self.A),
                  (self.C),(self.S),(self.b),(self.f),
-                 (self.sn),(self.g)],file)
+                 (self.sn),(self.g),self.dims,self.cn_filter,self.pnr],file)
 #                    np.array(self.C),np.array(self.S),np.array(self.b),np.array(self.f),
 #                 np.array(self.sn),np.array(self.g)],file)
         
@@ -1187,7 +1191,8 @@ class CNMF(object):
                      self.min_corr, self.min_pnr, self.deconvolve_options_init, self.ring_size_factor,
                      self.center_psf,  self.use_dense, self.deconv_flag,
                      self.simultaneously, self.n_refit, self.del_duplicates, self.N_samples_exceptionality,
-                     self.max_num_added, self.min_num_trial,self.options,self.A,  self.C ,self.S ,self.b, self.f,self.sn ,self.g] = pickle.load(file)
+                     self.max_num_added, self.min_num_trial,self.options,self.A,  self.C ,self.S ,self.b, 
+                     self.f,self.sn ,self.g,self.dims,self.cn_filter,self.pnr] = pickle.load(file)
 
 
 def scale(y):
