@@ -1012,6 +1012,137 @@ def plot_contours(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, dis
     return coordinates
 
 
+def plot_contours_colorized(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, display_numbers=True, max_number=None,
+                  cmap=None, swap_dim=False, colors='w', vmin=None, vmax=None, **kwargs):
+    """Plots contour of spatial components against a background image and returns their coordinates
+
+     Parameters:
+     -----------
+     A:   np.ndarray or sparse matrix
+               Matrix of Spatial components (d x K)
+
+     Cn:  np.ndarray (2D)
+               Background image (e.g. mean, correlation)
+
+     thr_method: [optional] string
+              Method of thresholding:
+                  'max' sets to zero pixels that have value less than a fraction of the max value
+                  'nrg' keeps the pixels that contribute up to a specified fraction of the energy
+
+     maxthr: [optional] scalar
+                Threshold of max value
+
+     nrgthr: [optional] scalar
+                Threshold of energy
+
+     thr: scalar between 0 and 1
+               Energy threshold for computing contours (default 0.9)
+               Kept for backwards compatibility. If not None then thr_method = 'nrg', and nrgthr = thr
+
+     display_number:     Boolean
+               Display number of ROIs if checked (default True)
+
+     max_number:    int
+               Display the number for only the first max_number components (default None, display all numbers)
+
+     cmap:     string
+               User specifies the colormap (default None, default colormap)
+
+     Returns:
+     --------
+     Coor: list of coordinates with center of mass, contour plot coordinates and bounding box for each component
+    """
+    if issparse(A):
+        A = np.array(A.todense())
+    else:
+        A = np.array(A)
+
+    if swap_dim:
+        Cn = Cn.T
+        print('Swapping dim')
+
+    d1, d2 = np.shape(Cn)
+    d, nr = np.shape(A)
+    if max_number is None:
+        max_number = nr
+
+    if thr is not None:
+        thr_method = 'nrg'
+        nrgthr = thr
+        warn("The way to call utilities.plot_contours has changed. Look at the definition for more details.")
+
+    x, y = np.mgrid[0:d1:1, 0:d2:1]
+
+    ax = pl.gca()
+    if vmax is None and vmin is None:
+        pl.imshow(Cn, interpolation=None, cmap=cmap,
+                  vmin=np.percentile(Cn[~np.isnan(Cn)], 1), vmax=np.percentile(Cn[~np.isnan(Cn)], 99))
+    else:
+        pl.imshow(Cn, interpolation=None, cmap=cmap,
+                  vmin=vmin, vmax=vmax)
+
+    coordinates = []
+    cm = com(A, d1, d2)
+    for i in range(np.minimum(nr, max_number)):
+        pars = dict(kwargs)
+        if thr_method == 'nrg':
+            indx = np.argsort(A[:, i], axis=None)[::-1]
+            cumEn = np.cumsum(A[:, i].flatten()[indx]**2)
+            cumEn /= cumEn[-1]
+            Bvec = np.zeros(d)
+            Bvec[indx] = cumEn
+            thr = nrgthr
+
+        else:  # thr_method = 'max'
+            if thr_method != 'max':
+                warn("Unknown threshold method. Choosing max")
+            Bvec = A[:, i].flatten()
+            Bvec /= np.max(Bvec)
+            thr = maxthr
+
+        if swap_dim:
+            Bmat = np.reshape(Bvec, np.shape(Cn), order='C')
+        else:
+            Bmat = np.reshape(Bvec, np.shape(Cn), order='F')
+        cs = pl.contour(y, x, Bmat, [thr], colors=tuple([colors[i,:]]))
+        # this fix is necessary for having disjoint figures and borders plotted correctly
+        p = cs.collections[0].get_paths()
+        v = np.atleast_2d([np.nan, np.nan])
+        for pths in p:
+            vtx = pths.vertices
+            num_close_coords = np.sum(np.isclose(vtx[0, :], vtx[-1, :]))
+            if num_close_coords < 2:
+                if num_close_coords == 0:
+                    # case angle
+                    newpt = np.round(old_div(vtx[-1, :], [d2, d1])) * [d2, d1]
+                    #import ipdb; ipdb.set_trace()
+                    vtx = np.concatenate((vtx, newpt[np.newaxis, :]), axis=0)
+
+                else:
+                    # case one is border
+                    vtx = np.concatenate((vtx, vtx[0, np.newaxis]), axis=0)
+                    #import ipdb; ipdb.set_trace()
+
+            v = np.concatenate(
+                (v, vtx, np.atleast_2d([np.nan, np.nan])), axis=0)
+
+        pars['CoM'] = np.squeeze(cm[i, :])
+        pars['coordinates'] = v
+        pars['bbox'] = [np.floor(np.min(v[:, 1])), np.ceil(np.max(v[:, 1])),
+                        np.floor(np.min(v[:, 0])), np.ceil(np.max(v[:, 0]))]
+        pars['neuron_id'] = i + 1
+        coordinates.append(pars)
+
+    if display_numbers:
+        for i in range(np.minimum(nr, max_number)):
+            if swap_dim:
+                ax.text(cm[i, 0], cm[i, 1], str(i + 1), color=colors)
+            else:
+                ax.text(cm[i, 1], cm[i, 0], str(i + 1), color=colors)
+
+    return coordinates
+
+
 def plot_shapes(Ab, dims, num_comps=15, size=(15, 15), comps_per_row=None,
                 cmap='viridis', smoother=lambda s: median_filter(s, 3)):
 
