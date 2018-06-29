@@ -1247,9 +1247,9 @@ class movie(ts.timeseries):
                 top = min(upper_left[1],lower_right[1],self.shape[1])//magnification
                 bottom = max(upper_left[1],lower_right[1],0)//magnification
 
-            self =  self[:, top:bottom, left:right]
+            return self[:, top:bottom, left:right],[top,bottom,left,right]
 
-        return self
+        return self,[]
 
 
 def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None, var_name_hdf5 = None, in_memory = False, is_behavior = False, bottom=0, top=0, left=0, right=0, channel = None):

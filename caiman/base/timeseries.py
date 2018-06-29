@@ -193,11 +193,14 @@ class timeseries(np.ndarray):
             minn, maxx = np.min(self), np.max(self)
             data = 255 * (self - minn) / (maxx - minn)
             data = data.astype(np.uint8)
-            y, x = data[0].shape
+            y, x = data[0].shape[0:2]
             vw = cv2.VideoWriter(file_name, codec, self.fr,
                                  (x, y), isColor=True)
             for d in data:
-                vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
+                if len(d.shape)==2:
+                    vw.write(cv2.cvtColor(d, cv2.COLOR_GRAY2BGR))
+                else:
+                    vw.write(d)
             vw.release()
 
         elif extension == '.mat':

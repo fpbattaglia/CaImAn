@@ -405,7 +405,9 @@ def parallel_dot_product(A, b, block_size=5000, dview=None, transpose=False, num
 
     import pickle
     pars = []
+
     d1, d2 = np.shape(A)
+        
     b = pickle.dumps(b)
     print('parallel dot product block size: ' + str(block_size))
 

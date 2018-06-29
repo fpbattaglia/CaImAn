@@ -1013,7 +1013,7 @@ def plot_contours(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, dis
 
 
 def plot_contours_colorized(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgthr=0.9, display_numbers=True, max_number=None,
-                  cmap=None, swap_dim=False, colors='w', vmin=None, vmax=None, **kwargs):
+                  cmap=None, swap_dim=False, colors='w', color_text = 'w', vmin=None, vmax=None, **kwargs):
     """Plots contour of spatial components against a background image and returns their coordinates
 
      Parameters:
@@ -1104,7 +1104,7 @@ def plot_contours_colorized(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgth
             Bmat = np.reshape(Bvec, np.shape(Cn), order='C')
         else:
             Bmat = np.reshape(Bvec, np.shape(Cn), order='F')
-        cs = pl.contour(y, x, Bmat, [thr], colors=tuple([colors[i,:]]))
+        cs = pl.contour(y, x, Bmat, [thr], colors=tuple([colors[i]]))
         # this fix is necessary for having disjoint figures and borders plotted correctly
         p = cs.collections[0].get_paths()
         v = np.atleast_2d([np.nan, np.nan])
@@ -1136,9 +1136,9 @@ def plot_contours_colorized(A, Cn, thr=None, thr_method='max', maxthr=0.2, nrgth
     if display_numbers:
         for i in range(np.minimum(nr, max_number)):
             if swap_dim:
-                ax.text(cm[i, 0], cm[i, 1], str(i + 1), color=colors)
+                ax.text(cm[i, 0], cm[i, 1], str(i + 1), {'color':color_text})
             else:
-                ax.text(cm[i, 1], cm[i, 0], str(i + 1), color=colors)
+                ax.text(cm[i, 1], cm[i, 0], str(i + 1), {'color':color_text})
 
     return coordinates
 

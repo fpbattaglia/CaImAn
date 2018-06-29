@@ -22,6 +22,7 @@ from __future__ import print_function
 import numpy as np
 import os
 from scipy.ndimage.filters import gaussian_filter
+import matplotlib.pyplot as plt
 import cv2
 try:
     from urllib2 import urlopen
@@ -297,3 +298,64 @@ def load_object(filename):
     with open(filename, 'rb') as input_obj:
         obj = pickle.load(input_obj)
     return obj
+
+
+
+def eval_by_hand(cnm):
+    
+    key=False
+    
+    def onclick(event):
+        nonlocal key
+        key = event.key
+
+    
+    fig = plt.figure(figsize=(10,10))
+    fig.canvas.mpl_connect('key_press_event', onclick)    
+    
+    print("Evaluation by hand. a = accepted, n=not accepted, q=return.")
+    idcs = np.zeros(cnm.S.shape[0])
+    
+    i = 0;
+    while i<cnm.S.shape[0]:      
+        
+        
+        plt.subplot2grid((4,2),(0,0),colspan=2,rowspan=1)
+        plt.title(str(i+1)+'/'+str(idcs.shape[0]))
+        plt.plot(cnm.S[i,:])
+        
+        plt.subplot2grid((4,2),(1,0),colspan=2,rowspan=1)
+
+        plt.plot(cnm.S[i,0:500])
+        
+        plt.subplot2grid((4,2),(2,0),colspan=2,rowspan=2)
+
+        plt.imshow(cnm.cn_filter)
+        d1, d2 = np.shape(cnm.cn_filter)
+        x, y = np.mgrid[0:d1:1, 0:d2:1]
+        
+        Bvec = (cnm.A[:, i]).toarray().flatten()
+        Bvec /= np.max(Bvec)
+        thr = 0.2
+        Bmat = np.reshape(Bvec, np.shape(cnm.cn_filter), order='F')
+        
+        plt.contour(y, x, Bmat, [thr],colors = 'r')  
+        
+        plt.draw()
+        plt.pause(0.1)
+        
+        
+        
+        plt.waitforbuttonpress()
+        
+        plt.pause(0.1)
+        
+        if key=='a':
+            idcs[i]=1
+            i+=1
+        elif key=='n':
+            i+=1
+        elif key == 'q':
+            plt.close()
+            return idcs
+                
